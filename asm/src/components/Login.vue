@@ -1,101 +1,55 @@
 <template>
   <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow">
-        <div class="card-body p-4">
-          <h2 class="card-title text-center mb-4">Đăng nhập</h2>
-          
-          <div v-if="errorMessage" class="alert alert-danger" role="alert">
-            {{ errorMessage }}
-          </div>
-
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Đăng nhập</div>
+        <div class="card-body">
           <form @submit.prevent="handleLogin">
             <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                id="email"
-                v-model="form.email"
-                required
-                placeholder="Nhập email của bạn"
-              />
+              <label class="form-label">Email</label>
+              <input v-model="email" type="email" class="form-control" required>
             </div>
-
             <div class="mb-3">
-              <label for="password" class="form-label">Mật khẩu</label>
-              <input
-                type="password"
-                class="form-control"
-                id="password"
-                v-model="form.password"
-                required
-                placeholder="Nhập mật khẩu"
-              />
+              <label class="form-label">Mật khẩu</label>
+              <input v-model="password" type="password" class="form-control" required>
             </div>
-
-            <button
-              type="submit"
-              class="btn btn-primary w-100 mb-3"
-              :disabled="loading"
-            >
-              <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-              Đăng nhập
-            </button>
+            <div v-if="error" class="alert alert-danger">{{ error }}</div>
+            <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
           </form>
-
-          <div class="text-center">
-            <p class="mb-0">
-              Chưa có tài khoản?
-              <router-link to="/register">Đăng ký ngay</router-link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { authService } from '../utils/auth.js'
+<script>
+export default {
+  data() {
+    return {
+      email: '',
+      password: '',
+      error: ''
+    }
+  },
+  methods: {
+    handleLogin() {
+      // Lấy danh sách user từ LocalStorage
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      
+      // Tìm user khớp email và password
+      const user = users.find(u => u.email === this.email && u.password === this.password);
 
-const router = useRouter()
-const loading = ref(false)
-const errorMessage = ref('')
-
-const form = reactive({
-  email: '',
-  password: ''
-})
-
-const handleLogin = async () => {
-  loading.value = true
-  errorMessage.value = ''
-
-  const result = authService.login(form.email, form.password)
-
-  if (result.success) {
-    // Reload page to update navbar
-    window.location.reload()
-    router.push('/')
-  } else {
-    errorMessage.value = result.message
+      if (user) {
+        // Lưu user đang đăng nhập
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        // Báo cho App.vue biết để cập nhật menu
+        this.$emit('auth-change');
+        alert("Đăng nhập thành công!");
+        this.$router.push('/');
+      } else {
+        this.error = "Email hoặc mật khẩu không đúng!";
+      }
+    }
   }
-
-  loading.value = false
 }
 </script>
-
-<style scoped>
-.card {
-  border: none;
-  border-radius: 10px;
-}
-
-.card-title {
-  color: #333;
-  font-weight: 600;
-}
-</style>
